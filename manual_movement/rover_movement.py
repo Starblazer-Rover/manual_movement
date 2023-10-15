@@ -1,7 +1,7 @@
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import Int32MultiArray
-from roboclaw_python.roboclaw_python.roboclaw_3 import Roboclaw
+from roboclaw_3 import Roboclaw
 
 
 class RoverMovement(Node):
