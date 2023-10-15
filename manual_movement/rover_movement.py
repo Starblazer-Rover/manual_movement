@@ -27,33 +27,33 @@ class RoverMovement(Node):
         if left_axis < 0:
             left_axis = -left_axis
             ratio = left_axis / self.MAX_VALUE
-            left_axis = int(ratio * 60)
+            left_axis = int(ratio * 30)
 
             self.roboclaw_2.BackwardM1(0x81, left_axis)
-            self.roboclaw_1.BackwardM1(0x80, left_axis)
+            self.roboclaw_1.BackwardM2(0x80, left_axis)
             
         elif left_axis > 0:
             ratio = left_axis / self.MAX_VALUE
-            left_axis = int(ratio * 60)
+            left_axis = int(ratio * 30)
 
             self.roboclaw_2.ForwardM1(0x81, left_axis)
-            self.roboclaw_1.ForwardM1(0x80, left_axis)
+            self.roboclaw_1.ForwardM2(0x80, left_axis)
 
         
         if right_axis < 0:
             right_axis = -right_axis
             ratio = right_axis / self.MAX_VALUE
-            right_axis = int(ratio * 60)
+            right_axis = int(ratio * 30)
 
             self.roboclaw_2.BackwardM2(0x81, right_axis)
-            self.roboclaw_1.BackwardM2(0x80, right_axis)
+            self.roboclaw_1.BackwardM1(0x80, right_axis)
 
         elif right_axis > 0:
             ratio = right_axis / self.MAX_VALUE
-            right_axis = int(ratio * 60)
+            right_axis = int(ratio * 30)
 
             self.roboclaw_2.ForwardM2(0x81, right_axis)
-            self.roboclaw_1.ForwardM2(0x80, right_axis)
+            self.roboclaw_1.ForwardM1(0x80, right_axis)
 
 def main(args=None):
     try:
