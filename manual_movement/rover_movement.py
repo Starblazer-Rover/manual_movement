@@ -1,7 +1,7 @@
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import Int32MultiArray
-from roboclaw_python.roboclaw_python.roboclaw_3 import Roboclaw
+from roboclaw_3 import Roboclaw
 
 
 class RoverMovement(Node):
@@ -9,16 +9,30 @@ class RoverMovement(Node):
         
         self.MAX_VALUE = 32768
 
-
         super().__init__('rover_movement')
         self.subscription = self.create_subscription(Int32MultiArray, 'topic', self.listener_callback, 1)
-        self.subscription
 
         self.roboclaw_1 = Roboclaw("/dev/ttyACM0", 38400)
         self.roboclaw_1.Open()
 
         self.roboclaw_2 = Roboclaw("/dev/ttyACM1", 38400)
         self.roboclaw_2.Open()
+
+        self.encoder_publisher = self.create_publisher(Int32MultiArray, 'encoder_data', 10)
+        timer_period = 0.05
+        self.timer = self.create_timer(timer_period, self.publisher_callback)
+
+    def publisher_callback(self):
+        msg = Int32MultiArray()
+
+        front_left = self.roboclaw_1.ReadEncM1(0x80)
+        front_right = self.roboclaw_1.ReadEncM1(0x81)
+        back_left = self.roboclaw_2.ReadEncM1(0x80)
+        back_right = self.roboclaw_2.ReadEncM1(0x81)
+
+        msg.data = [front_left, front_right, back_left, back_right]
+        self.encoder_publisher.publish(msg)
+        self.get_logger().info("File [rover_movement] publishing: {msg.data}")
 
     def listener_callback(self, msg):
         left_axis = msg.data[0]
@@ -62,7 +76,9 @@ def main(args=None):
         rover_movement = RoverMovement()
 
         rclpy.spin(rover_movement)
+        rclpy.spin(rover_movement.encoder_publisher)
 
+        rover_movement.encoder_publisher.destroy_node()
         rover_movement.destroy_node()
         rclpy.shutdown()
     except KeyboardInterrupt:
