@@ -34,8 +34,8 @@ class ControllerPublisher(Node):
 
         super().__init__('controller_publisher')
 
-        self.publisher = self.create_publisher(Int32MultiArray, 'topic', 10)
-        timer_period = 0.00001
+        self.publisher = self.create_publisher(Int32MultiArray, 'topic', 1)
+        timer_period = 0.0001
         controller_setup(self)
 
         self.timer = self.create_timer(timer_period, self.timer_callback)
