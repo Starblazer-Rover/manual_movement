@@ -19,8 +19,7 @@ class RoverMovement(Node):
         self.roboclaw_2.Open()
 
         self.encoder_publisher = self.create_publisher(Int32MultiArray, 'encoder_data', 10)
-        timer_period = 0.05
-        self.timer = self.create_timer(timer_period, self.publisher_callback)
+        
 
     def publisher_callback(self):
         msg = Int32MultiArray()
@@ -35,6 +34,8 @@ class RoverMovement(Node):
         self.get_logger().info("File [rover_movement] publishing: {msg.data}")
 
     def listener_callback(self, msg):
+        self.publisher_callback()
+
         left_axis = msg.data[0]
         right_axis = msg.data[1]
 
@@ -70,15 +71,12 @@ class RoverMovement(Node):
             self.roboclaw_1.ForwardM1(0x80, right_axis)
 
 def main(args=None):
+    rclpy.init(args=args)
+
+    rover_movement = RoverMovement()
     try:
-        rclpy.init(args=args)
-
-        rover_movement = RoverMovement()
-
         rclpy.spin(rover_movement)
-        rclpy.spin(rover_movement.encoder_publisher)
-
-        rover_movement.encoder_publisher.destroy_node()
+        
         rover_movement.destroy_node()
         rclpy.shutdown()
     except KeyboardInterrupt:
