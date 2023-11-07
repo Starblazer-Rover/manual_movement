@@ -44,30 +44,41 @@ class ControllerPublisher(Node):
         msg = Int32MultiArray()
         msg.data = [self.left_axis, self.right_axis]
 
-
         events = inputs.get_gamepad()
 
-        """
-        for event in events:
-            if event.code in self.BUTTONS:
-                button_name = self.BUTTONS[event.code]
-                if event.state == 1:
-                    print(f"{button_name} pressed")
-                else:
-                    print(f"{button_name} released")
-            elif event.code in self.AXES:
-                axis_name = self.AXES[event.code]
-                print(f"{axis_name}: {event.state}")
-        """
+        # axix = joystick
+        # button = button
+        def switch_axis(name, value):
+            # axis 
+            if name in ["Left Stick X", "Left Stick Y"]:
+                print("left stick")
+                self.left_axis = value
+            elif name in ["Right Stick X", "Right Stick Y"]:
+                print("right stick")
+                self.right_axis = value
+            if name == "LT":
+                print("left trigger")
+            elif name == "RT":
+                print("right trigger")
 
+        def switch_button(name, state):
+            if state == 1:
+                print(f"{name} pressed")
+            else:
+                print(f"{name} released")
+
+        # check for controller events 
         for event in events:
+            # axis control
             if event.code in self.AXES:
                 axis_name = self.AXES[event.code]
                 axis_value = int(event.state)
-                if axis_name == "Left Stick Y":
-                    self.left_axis = axis_value
-                elif axis_name == "Right Stick Y":
-                    self.right_axis = axis_value
+                switch_axis(axis_name, axis_value)
+            # button control
+            elif event.code in self.AXES:
+                button_name = self.BUTTONS[event.code]
+                button_state = event.state
+                switch_button(button_name, button_state)
             
         
 
