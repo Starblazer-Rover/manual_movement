@@ -6,7 +6,7 @@ from std_msgs.msg import Int32MultiArray
 class ControllerPublisher(Node):
     def __init__(self):
         def controller_setup(self):
-            self.AXES = {
+            self.KEYS = {
                 'ABS_X': 'Left Stick X',
                 'ABS_Y': 'Left Stick Y',
                 'ABS_RX': 'Right Stick X',
@@ -14,13 +14,11 @@ class ControllerPublisher(Node):
                 'ABS_Z': 'LT',
                 'ABS_RZ': 'RT',
                 'ABS_HAT0X': 'Arrow X',
-                'ABS_HAT0Y': 'Arrow Y'
-            }
-            self.BUTTONS = {
+                'ABS_HAT0Y': 'Arrow Y',
                 'BTN_SOUTH': 'A',
                 'BTN_EAST': 'B',
-                'BTN_WEST': 'Y',
                 'BTN_NORTH': 'X',
+                'BTN_WEST': 'Y',
                 'BTN_TL': 'LB',
                 'BTN_TR': 'RB',
                 'BTN_SELECT': 'Back',
@@ -29,11 +27,14 @@ class ControllerPublisher(Node):
                 'BTN_THUMBR': 'RS',
             }
 
-            self.left_stick_axis_x, self.left_stick_axis_y = 0, 0
-            self.right_stick_axis_x, self.right_stick_axis_y = 0, 0
-            self.left_trigger_axis, self.right_trigger_axis = 0, 0
-            self.arrow_axis_x, self.arrow_axis_y = 0, 0
-            self.button_axis_x, self.button_axis_y = 0, 0
+            self.left_stick_y, self.right_stick_y = 0, 0 
+            self.left_stick_x, self.right_stick_x = 0, 0 
+            self.left_trigger, self.right_trigger = 0, 0 
+            self.arrow_x, self.arrow_y = 0, 0 
+            self.button_a, self.button_b = 0, 0 
+            self.button_x, self.button_y = 0, 0 
+            self.left_bumper, self.right_bumper = 0, 0 
+            self.left_stick_button, self.right_stick_button = 0, 0 
 
             self.counter = 0
 
@@ -46,79 +47,56 @@ class ControllerPublisher(Node):
         self.timer = self.create_timer(timer_period, self.timer_callback)
 
     def timer_callback(self):
+        # message array 
         msg = Int32MultiArray()
-        msg.data = [self.left_stick_axis_y, self.right_stick_axis_y, 
-                    self.left_stick_axis_x, self.right_stick_axis_x,
-                    self.left_trigger_axis, self.right_trigger_axis,
-                    self.arrow_axis_x, self.arrow_axis_y,
-                    self.button_axis_x, self.button_axis_y]
-
+        msg.data = [self.left_stick_y, self.right_stick_y, 
+                    self.left_stick_x, self.right_stick_x,
+                    self.left_trigger, self.right_trigger,
+                    self.arrow_x, self.arrow_y,
+                    self.button_a, self.button_b,
+                    self.button_x, self.button_y,
+                    self.left_bumper, self.right_bumper,
+                    self.left_stick_button, self.right_stick_button]
+        
+        # input controls from game controller 
         events = inputs.get_gamepad()
 
-        def switch_axis(name, value):
+        # switch statement to update message array
+        def switch(name, value):
             # joysticks (up / down are inverse by default)
-            if name == "Left Stick Y":
-                self.left_stick_axis_y = value
-            elif name == "Right Stick Y":
-                self.right_stick_axis_y = value
-            elif name == "Left Stick X":
-                self.left_stick_axis_x = value
-            elif name == "Right Stick X":
-                self.right_stick_axis_x = value
-
+            self.left_stick_y = value if name == 'Left Stick Y' else 0
+            self.right_stick_y = value if name == 'Right Stick Y' else 0
+            self.left_stick_x = value if name == 'Left Stick X' else 0
+            self.right_stick_x = value if name == 'Right Stick X' else 0
             # triggers
-            elif name == "LT":
-                self.left_trigger_axis = value
-            elif name == "RT":
-                self.right_trigger_axis += value
-
+            self.left_trigger = value if name == 'LT' else 0
+            self.right_trigger = value if name == 'RT' else 0
             # arrow pad (up / down are inverse by default)
-            elif name == "Arrow X":
-                self.arrow_axis_x = value
-            elif name == "Arrow Y":
-                self.arrow_axis_y = value
-
-        def switch_button(name, state):
+            self.arrow_x = value if name == 'Arrow X' else 0
+            self.arrow_y = value if name == 'Arrow Y' else 0
             # button pad
-            if name == "B" and state == 1: # ->
-                self.button_axis_x = 1
-            elif name == "X" and state == 1: # <-
-                self.button_axis_x = 1
-            elif name == "Y" and state == 1: # ^
-                self.button_axis_y = 1
-            elif name == "A" and state == 1: # ⌄
-                self.button_axis_y = 1
-
-            # bumper
-            elif name == "LB" and state == 1:
-                print(f"{name} pressed")
-            elif name == "RB" and state == 1:
-                print(f"{name} pressed")
-            
-            elif name == "LS" and state == 1:
-                print(f"{name} pressed")
-            elif name == "RS" and state == 1:
-                print(f"{name} pressed")
-
-            elif name == "Back" and state == 1:
-                print(f"{name} pressed")
-            elif name == "Start" and state == 1:
-                print(f"{name} pressed")
+            self.button_a = value if name == 'A' and value == 1 else 0
+            self.button_b = value if name == 'B' and value == 1 else 0
+            self.button_x = value if name == 'X' and value == 1 else 0
+            self.button_y = value if name == 'Y' and value == 1 else 0
+            # bumper buttons
+            self.left_bumper = value if name == 'LB' and value == 1 else 0
+            self.right_bumper = value if name == 'RB' and value == 1 else 0
+            # stick buttons
+            self.left_stick_button = value if name == 'LS' and value == 1 else 0
+            self.right_stick_button = value if name == 'RS' and value == 1 else 0
 
         # check for controller events 
+        # unused buttons: 'Back' & 'start'
         for event in events:
-            # axis control
-            if event.code in self.AXES:
-                axis_name = self.AXES[event.code]
+            # switch control
+            if event.code in self.KEYS:
+                axis_name = self.KEYS[event.code]
                 axis_value = int(event.state)
-                switch_axis(axis_name, axis_value)
-            # button control
-            elif event.code in self.BUTTONS:
-                button_name = self.BUTTONS[event.code]
-                button_state = event.state
-                switch_button(button_name, button_state)
+                switch(axis_name, axis_value)
             print(msg.data)
-            
+        
+        # publish message
         if self.counter == 15:
             self.publisher.publish(msg)
             self.get_logger().info(f'Publishing: {msg.data}')
@@ -133,7 +111,7 @@ def main(args=None):
     controller_publisher.destroy_node()
     rclpy.shutdown()
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
 
 
