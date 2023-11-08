@@ -28,13 +28,13 @@ class ControllerPublisher(Node):
             }
 
             self.left_stick_y, self.right_stick_y = 0, 0 
-            self.left_stick_x, self.right_stick_x = 0, 0 
-            self.left_trigger, self.right_trigger = 0, 0 
-            self.arrow_x, self.arrow_y = 0, 0 
-            self.button_a, self.button_b = 0, 0 
-            self.button_x, self.button_y = 0, 0 
-            self.left_bumper, self.right_bumper = 0, 0 
-            self.left_stick_button, self.right_stick_button = 0, 0 
+            self.left_stick_x, self.right_stick_x = 0, 0
+            self.left_trigger, self.right_trigger = 0, 0
+            self.left_bumper, self.right_bumper = 0, 0
+            self.button_y, self.button_a = 0, 0
+            self.button_b, self.button_x = 0, 0
+            self.arrow_y_up, self.arrow_y_down = 0, 0
+            self.arrow_x_right, self.arrow_x_left = 0, 0
 
             self.counter = 0
 
@@ -52,11 +52,11 @@ class ControllerPublisher(Node):
         msg.data = [self.left_stick_y, self.right_stick_y, 
                     self.left_stick_x, self.right_stick_x,
                     self.left_trigger, self.right_trigger,
-                    self.arrow_x, self.arrow_y,
-                    self.button_a, self.button_b,
-                    self.button_x, self.button_y,
                     self.left_bumper, self.right_bumper,
-                    self.left_stick_button, self.right_stick_button]
+                    self.button_y, self.button_a,
+                    self.button_b, self.button_x,
+                    self.arrow_y_up, self.arrow_y_down,
+                    self.arrow_x_right, self.arrow_x_left]
         
         # input controls from game controller 
         events = inputs.get_gamepad()
@@ -71,23 +71,22 @@ class ControllerPublisher(Node):
             # triggers
             self.left_trigger = value if name == 'LT' else 0
             self.right_trigger = value if name == 'RT' else 0
-            # arrow pad (up / down are inverse by default)
-            self.arrow_x = value if name == 'Arrow X' else 0
-            self.arrow_y = value if name == 'Arrow Y' else 0
-            # button pad
-            self.button_a = value if name == 'A' and value == 1 else 0
-            self.button_b = value if name == 'B' and value == 1 else 0
-            self.button_x = value if name == 'X' and value == 1 else 0
-            self.button_y = value if name == 'Y' and value == 1 else 0
             # bumper buttons
             self.left_bumper = value if name == 'LB' and value == 1 else 0
             self.right_bumper = value if name == 'RB' and value == 1 else 0
-            # stick buttons
-            self.left_stick_button = value if name == 'LS' and value == 1 else 0
-            self.right_stick_button = value if name == 'RS' and value == 1 else 0
+            # button pad
+            self.button_y = value if name == 'Y' and value == 1 else 0
+            self.button_a = value if name == 'A' and value == 1 else 0
+            self.button_b = value if name == 'B' and value == 1 else 0
+            self.button_x = value if name == 'X' and value == 1 else 0
+            # arrow pad (up / down are inverse by default)
+            self.arrow_y_up = value if name == 'Arrow Y' and value > 0 else 0
+            self.arrow_y_down = value if name == 'Arrow Y' and value < 0 else 0
+            self.arrow_x_right = value if name == 'Arrow X' and value > 0 else 0
+            self.arrow_x_left = value if name == 'Arrow X' and value < 0 else 0
 
         # check for controller events 
-        # unused buttons: 'Back' & 'start'
+        # unused buttons: 'Back', 'start', 'LS, 'RS'
         for event in events:
             # switch control
             if event.code in self.KEYS:
