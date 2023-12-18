@@ -34,7 +34,7 @@ class RoverMovement(Node):
         self.get_logger().info("File [rover_movement] publishing: {msg.data}")
 
     def listener_callback(self, msg):
-        self.publisher_callback()
+        #self.publisher_callback()
 
         left_axis = msg.data[0]
         right_axis = msg.data[1]
