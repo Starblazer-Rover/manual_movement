@@ -1,94 +1,43 @@
 import rclpy
-from rclpy.node import Node
-from std_msgs.msg import Int32MultiArray
 from roboclaw_3 import Roboclaw
+from motor_control import MotorControl
+from encoder import Encoder
+from rclpy.executors import MultiThreadedExecutor
 
 
-class RoverMovement(Node):
-    def __init__(self):
-        
-        self.MAX_VALUE = 32768
+def __initialize_motors():
+    roboclaw_1 = Roboclaw("/dev/ttyACM0", 38400)
+    roboclaw_2 = Roboclaw("/dev/ttyACM1", 38400)
 
-        super().__init__('rover_movement')
-        self.subscription = self.create_subscription(Int32MultiArray, 'topic', self.listener_callback, 1)
+    roboclaw_1.Open()
+    roboclaw_2.Open()
 
-        self.roboclaw_1 = Roboclaw("/dev/ttyACM0", 38400)
-        self.roboclaw_1.Open()
+    return roboclaw_1, roboclaw_2
 
-        self.roboclaw_2 = Roboclaw("/dev/ttyACM1", 38400)
-        self.roboclaw_2.Open()
 
-        self.encoder_publisher = self.create_publisher(Int32MultiArray, 'encoder_data', 10)
-        
-
-    def publisher_callback(self):
-        msg = Int32MultiArray()
-
-        front_left = self.roboclaw_1.ReadEncM1(0x80)
-        front_right = self.roboclaw_1.ReadEncM1(0x81)
-        back_left = self.roboclaw_2.ReadEncM1(0x80)
-        back_right = self.roboclaw_2.ReadEncM1(0x81)
-
-        msg.data = [front_left, front_right, back_left, back_right]
-        self.encoder_publisher.publish(msg)
-        self.get_logger().info("File [rover_movement] publishing: {msg.data}")
-
-    def listener_callback(self, msg):
-        self.publisher_callback()
-
-        left_axis = msg.data[0]
-        right_axis = msg.data[1]
-        self.get_logger().info(f"Left_Axis: {left_axis}, Right_Axis: {right_axis}")
-
-        if left_axis < 0:
-            left_axis = -left_axis
-            ratio = left_axis / self.MAX_VALUE
-            left_axis = int(ratio * 30)
-
-            self.roboclaw_1.ForwardM1(0x80, left_axis)
-            self.roboclaw_1.BackwardM2(0x80, left_axis)
-            
-        elif left_axis > 0:
-            ratio = left_axis / self.MAX_VALUE
-            left_axis = int(ratio * 30)
-
-            self.roboclaw_1.BackwardM1(0x80, left_axis)
-            self.roboclaw_1.ForwardM2(0x80, left_axis)
-
-        
-        if right_axis < 0:
-            right_axis = -right_axis
-            ratio = right_axis / self.MAX_VALUE
-            right_axis = int(ratio * 30)
-
-            self.roboclaw_2.BackwardM2(0x81, right_axis)
-            self.roboclaw_2.ForwardM1(0x81, right_axis)
-
-        elif right_axis > 0:
-            ratio = right_axis / self.MAX_VALUE
-            right_axis = int(ratio * 30)
-
-            self.roboclaw_2.ForwardM2(0x81, right_axis)
-            self.roboclaw_2.BackwardM1(0x81, right_axis)
- 
 def main(args=None):
     rclpy.init(args=args)
 
-    rover_movement = RoverMovement()
+    roboclaw_1, roboclaw_2 = __initialize_motors()
+
+    motor_control = MotorControl(roboclaw_1, roboclaw_2)
+    encoder = Encoder(roboclaw_1, roboclaw_2)
+
+    executor = MultiThreadedExecutor()
+
+    executor.add_node(motor_control)
+    executor.add_node(encoder)
+
     try:
-        rclpy.spin(rover_movement)
-        
-        rover_movement.destroy_node()
-        rclpy.shutdown()
+        executor.spin()
 
     except KeyboardInterrupt:
-        rover_movement.roboclaw_1.ForwardM1(0x80, 0)
-        rover_movement.roboclaw_1.ForwardM2(0x80, 0)
-        rover_movement.roboclaw_2.ForwardM1(0x81, 0)
-        rover_movement.roboclaw_2.ForwardM2(0x81, 0)
+        motor_control.roboclaw_1.ForwardM1(0x81, 0)
+        motor_control.roboclaw_2.ForwardM2(0x80, 0)
 
-        rover_movement.roboclaw_1 = None
-        rover_movement.roboclaw_2 = None
+        motor_control.destroy_node()
+        encoder.destroy_node()
+        
 
 if __name__ == '__main__':
     main()

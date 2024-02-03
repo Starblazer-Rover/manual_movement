@@ -25,7 +25,7 @@ setup(
         'console_scripts': [
             'controller = manual_movement.controller:main',
             'rover_movement = manual_movement.rover_movement:main',
-            'test = manual_movement.test_file:main'
+            'test = manual_movement.test:main'
         ],
     },
 )
