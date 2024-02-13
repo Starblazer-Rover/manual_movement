@@ -88,13 +88,13 @@ class ControllerPublisher(Node):
         # switch statement to update message array
         def switch(name, value):
             # joysticks (up / down are inverse by default)
-            self.left_stick_y = value if name == 'Left Stick Y' else 0
-            self.right_stick_y = value if name == 'Right Stick Y' else 0
-            self.left_stick_x = value if name == 'Left Stick X' else 0
-            self.right_stick_x = value if name == 'Right Stick X' else 0
+            self.left_stick_y = value if name == 'Left Stick Y' else self.left_stick_y
+            self.right_stick_y = value if name == 'Right Stick Y' else self.right_stick_y
+            self.left_stick_x = value if name == 'Left Stick X' else self.left_stick_x
+            self.right_stick_x = value if name == 'Right Stick X' else self.left_stick_y
             # triggers
-            self.left_trigger = value if name == 'LT' else 0
-            self.right_trigger = value if name == 'RT' else 0
+            self.left_trigger = value if name == 'LT' else self.left_trigger
+            self.right_trigger = value if name == 'RT' else self.right_trigger
             # bumper buttons
             self.left_bumper = 1 if name == 'LB' and value == 1 else 0
             self.right_bumper = 1 if name == 'RB' and value == 1 else 0
