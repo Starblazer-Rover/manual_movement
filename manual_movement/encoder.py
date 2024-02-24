@@ -27,7 +27,11 @@ class Encoder(Node):
         # 8 in. Diameter Wheels
         CIRCUMFERENCE = 8 * np.pi
 
+        print("Left: ")
+
+        """
         left_encoder = self.roboclaw_1.ReadEncM1(0x81)
+
         right_encoder = self.roboclaw_2.ReadEncM2(0x80)
 
         left_distance = (left_encoder / PPR) * CIRCUMFERENCE
@@ -42,4 +46,5 @@ class Encoder(Node):
 
         self.roboclaw_1.SetEncM1(0x81, 0)
         self.roboclaw_2.SetEncM2(0x80, 0)
+        """
 

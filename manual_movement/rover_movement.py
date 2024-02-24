@@ -1,7 +1,7 @@
 import rclpy
 from roboclaw_3 import Roboclaw
-from motor_control import MotorControl
-from encoder import Encoder
+from manual_movement.motor_control import MotorControl
+from manual_movement.encoder import Encoder
 from rclpy.executors import MultiThreadedExecutor
 
 
@@ -26,7 +26,7 @@ def main(args=None):
     executor = MultiThreadedExecutor()
 
     executor.add_node(motor_control)
-    executor.add_node(encoder)
+    #executor.add_node(encoder)
 
     try:
         executor.spin()
