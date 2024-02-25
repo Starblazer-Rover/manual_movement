@@ -76,7 +76,7 @@ class ControllerPublisher(Node):
         '''
         # message array 
         msg = Int32MultiArray()
-        msg.data = [self.left_stick_y, self.right_stick_y, 
+        msg.data = [-self.left_stick_y, -self.right_stick_y, 
                     self.left_stick_x, self.right_stick_x,
                     self.left_trigger, self.right_trigger,
                     self.left_bumper, self.right_bumper,
