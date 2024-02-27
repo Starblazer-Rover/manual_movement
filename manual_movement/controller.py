@@ -76,7 +76,7 @@ class ControllerPublisher(Node):
         '''
         # message array 
         msg = Int32MultiArray()
-        msg.data = [self.left_stick_y, self.right_stick_y, 
+        msg.data = [-self.left_stick_y, -self.right_stick_y, 
                     self.left_stick_x, self.right_stick_x,
                     self.left_trigger, self.right_trigger,
                     self.left_bumper, self.right_bumper,
@@ -128,7 +128,15 @@ class ControllerPublisher(Node):
 def main(args=None):
     rclpy.init(args=args)
     controller_publisher = ControllerPublisher()
-    rclpy.spin(controller_publisher)
+
+    try:
+        rclpy.spin(controller_publisher)
+    except KeyboardInterrupt:
+        msg = Int32MultiArray()
+
+        msg.data = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        controller_publisher.publisher.publish(msg)
+
     controller_publisher.destroy_node()
     rclpy.shutdown()
 

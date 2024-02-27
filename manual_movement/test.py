@@ -7,7 +7,7 @@ class TestSubscriber(Node):
 
     def __init__(self):
         super().__init__('test_subscriber')
-        self.subscription = self.create_subscription(Int32MultiArray, 'topic', self.listener_callback, 1)
+        self.subscription = self.create_subscription(Int32MultiArray, '/movement/Controller', self.listener_callback, 1)
 
     def listener_callback(self, msg):
         print(msg)

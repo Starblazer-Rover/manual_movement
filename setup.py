@@ -12,7 +12,7 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        (os.path.join('share', package_name), glob('launch/*.launch.py'))
+        (os.path.join('share', package_name, 'launch'), glob(os.path.join('launch', '*launch.[pxy][yma]*')))
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -24,7 +24,7 @@ setup(
     entry_points={
         'console_scripts': [
             'controller = manual_movement.controller:main',
-            'rover_movement = manual_movement.rover_movement:main',
+            'rover_movement = manual_movement.neo_movement:main',
             'test = manual_movement.test:main'
         ],
     },
