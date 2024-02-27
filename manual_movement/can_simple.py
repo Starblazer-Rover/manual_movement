@@ -51,7 +51,7 @@ def move(velocity):
     for msg in bus:
         print(counter)
         if msg.arbitration_id == (ID_ORDER[counter] << 5 | 0x01): # 0x01: Heartbeat
-            error, state, result, traj_done = struct.unpack('<IBBB', bytes(msg.data[:7]))
+            _, state, __, ___ = struct.unpack('<IBBB', bytes(msg.data[:7]))
             if state != 8: # 8: AxisState.CLOSED_LOOP_CONTROL
                 continue
         else:
