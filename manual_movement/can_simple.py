@@ -27,6 +27,7 @@ Order:
 0x02
 0x06
 0x05
+0x07
 0x03
 """
 
@@ -34,7 +35,7 @@ Order:
 MAX_SPEED = 24
 MAX_VALUE = 32768
 ID_ORDER = [0x04, 0x02, 0x05]
-node_id = 0x06 # must match `<odrv>.axis0.config.can.node_id`. The default is 0.
+node_id = 0x02 # must match `<odrv>.axis0.config.can.node_id`. The default is 0.
 
 def close_loop():
     for id in ID_ORDER:
@@ -44,12 +45,12 @@ def close_loop():
             is_extended_id=False
         ))
 
-        print("done")
+    print("done")
 
 def move(velocity):
     counter = 0
     for msg in bus:
-        print(counter)
+        #print(msg)
         if msg.arbitration_id == (ID_ORDER[counter] << 5 | 0x01): # 0x01: Heartbeat
             _, state, __, ___ = struct.unpack('<IBBB', bytes(msg.data[:7]))
             if state != 8: # 8: AxisState.CLOSED_LOOP_CONTROL
@@ -73,6 +74,7 @@ bus = can.interface.Bus("can0", bustype="socketcan")
 # Flush CAN RX buffer so there are no more old pending messages
 while not (bus.recv(timeout=0) is None): pass
 
+"""
 close_loop()
 
 print("moving")
@@ -115,16 +117,7 @@ bus.send(can.Message(
     data=struct.pack('<ff', 0.0, 0.0), # 1.0: velocity, 0.0: torque feedforward
     is_extended_id=False
 ))
-"""
 
-"""
-left_axis = msg[0]
-right_axis = msg[1]
-
-left_ratio, right_ratio = left_axis/MAX_VALUE, right_axis/MAX_VALUE
-
-left_speed, right_speed = left_ratio * MAX_SPEED, right_ratio * MAX_SPEED
-"""
 
 
 
