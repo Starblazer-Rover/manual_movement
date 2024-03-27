@@ -5,10 +5,10 @@ import can
 import struct
 import time
 
-from std_msgs.msg import Int32MultiArray
+from std_msgs.msg import Int64
 
 
-class NeoSubscriber(Node):
+class ArucoSubscriber(Node):
 
     """
     0x02: 041
@@ -27,18 +27,21 @@ class NeoSubscriber(Node):
     0x03
     """
     def __init__(self):
-        self.MAX_SPEED = 45
-        self.MAX_VALUE = 32768
+        self.SPEED_RATIO = 25
+        self.CENTER = 370
+
         self.ID_ORDER = [0x02, 0x03, 0x04, 0x05, 0x06, 0x07]
         self.LEFT_ID_ORDER = [0x07, 0x02, 0x03]
         self.RIGHT_ID_ORDER = [0x04, 0x06, 0x05]
+
+        self.counter = 0
 
         self.bus = can.interface.Bus("can0", bustype="socketcan")
 
         self.close_loop()
 
-        super().__init__('neo_subscriber')
-        self.subscription = self.create_subscription(Int32MultiArray, '/movement/Controller', self.listener_callback, 1)
+        super().__init__('aruco_subscriber')
+        self.subscription = self.create_subscription(Int64, '/movement/aruco', self.listener_callback, 10)
         self.subscription
 
     def close_loop(self):
@@ -54,9 +57,9 @@ class NeoSubscriber(Node):
     def move_left(self, velocity):
         counter = 0
         for msg in self.bus:
-            print(msg)
             if msg.arbitration_id == (self.LEFT_ID_ORDER[counter] << 5 | 0x01): # 0x01: Heartbeat
                 _, state, __, ___ = struct.unpack('<IBBB', bytes(msg.data[:7]))
+                print("got")
                 if state != 8: # 8: AxisState.CLOSED_LOOP_CONTROL
                     continue
             else:
@@ -94,46 +97,51 @@ class NeoSubscriber(Node):
                 break
 
     def listener_callback(self, msg):
-        left_axis = msg.data[0]
-        right_axis = msg.data[1]
+        x_coord = msg.data
 
-        if abs(left_axis) < 2000:
-            left_axis = 0
+        if self.counter == 60 and x_coord == 1000:
+            self.move_left(5)
+            self.move_right(-5)
 
-        if abs(right_axis) < 2000:
-            right_axis = 9
+            print("Spinning")
 
-        left_ratio = left_axis / self.MAX_VALUE
-        right_ratio = right_axis / self.MAX_VALUE
+        elif x_coord == 1000:
+            self.counter += 1
+        
+        else:
+            self.counter = 0
 
-        left_velocity = left_ratio * self.MAX_SPEED
-        right_velocity = right_ratio * self.MAX_SPEED
+            difference = self.CENTER - x_coord
 
-        print("moving")
-        print(left_velocity)
-        self.move_left(left_velocity)
-        self.move_right(right_velocity)
+            if abs(difference) <= 50:
+                self.move_left(5)
+                self.move_right(5)
+                print("Moving Forward")
+            else:
+                self.move_left(-difference / self.SPEED_RATIO)
+                self.move_right(difference / self.SPEED_RATIO)
+
+                print("Moving Left/Right")
+
+
 
 
 def main(args=None):
     rclpy.init(args=args)
 
-    neo_subscriber = NeoSubscriber()
+    aruco_subscriber = ArucoSubscriber()
 
     try:
-        rclpy.spin(neo_subscriber)
+        rclpy.spin(aruco_subscriber)
 
     except KeyboardInterrupt:
-        neo_subscriber.move_left(0)
-        neo_subscriber.move_right(0)
+        aruco_subscriber.move_left(0)
+        aruco_subscriber.move_right(0)
 
-    neo_subscriber.destroy_node()
+    aruco_subscriber.destroy_node()
     rclpy.shutdown()
 
 
 if __name__ == '__main__':
     main()
-
-
-
 
