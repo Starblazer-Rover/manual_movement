@@ -24,7 +24,7 @@ setup(
     entry_points={
         'console_scripts': [
             'controller = manual_movement.controller:main',
-            'rover_movement = manual_movement.neo_movement:main',
+            'rover_movement = manual_movement.neo_teensy:main',
             'test = manual_movement.test:main'
         ],
     },
