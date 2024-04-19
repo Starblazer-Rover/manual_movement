@@ -7,7 +7,7 @@ from std_msgs.msg import Int32MultiArray
 class NeoSubscriber(Node):
 
     def __init__(self):
-        super().__init__('arm_subscriber')
+        super().__init__('neo_subscriber')
         self.subscription = self.create_subscription(Int32MultiArray, '/movement/Controller', self.listener_callback, 1)
         self.subscription
 
@@ -17,19 +17,25 @@ class NeoSubscriber(Node):
         self.ser = serial.Serial(port='/dev/ttyACM0', baudrate=115200, timeout=1)
         self.get_logger().info('serial opened')
 
+        self.ser2 = serial.Serial(port='/dev/ttyACM0', baudrate=115200, timeout=1)
+
     def listener_callback(self, msg):
-        
+        self.get_logger().info('starting message')
         
         left = (msg.data[0] / self.MAX_VALUE) * 30
         right = (msg.data[1] / self.MAX_VALUE) * 30
 
+        if abs(left) < 1:
+            left = 0
+        
+        if abs(right) < 1:
+            right = 0
 
 
-        self.get_logger().info(f'Left: {left}, Right: {right}')
+        string = f'{-left},{-left},{-left},{right},{right},{right}\n'
+        self.get_logger().info(string[:len(string) - 1])
 
-        self.ser.write(f'{-left},{-left},{-left},{right},{right},{right}\n'.encode())
-
-        self.get_logger().info('finished writing')
+        self.ser.write(string.encode())
 
 def main(args=None):
     rclpy.init(args=args)
@@ -39,6 +45,7 @@ def main(args=None):
     try:
         rclpy.spin(neo_subscriber)
     except KeyboardInterrupt:
+        neo_subscriber.ser.write('0,0,0,0,0,0\n'.encode())
         neo_subscriber.ser.close()
         neo_subscriber.destroy_node()
 

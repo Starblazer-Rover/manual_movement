@@ -1,7 +1,7 @@
 import rclpy
 from roboclaw_3 import Roboclaw
 from manual_movement.motor_control import MotorControl
-from manual_movement.encoder import Encoder
+from manual_movement.manual_movement.encoders import Encoder
 from rclpy.executors import MultiThreadedExecutor
 
 
