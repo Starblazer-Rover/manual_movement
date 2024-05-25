@@ -14,25 +14,22 @@ class NeoSubscriber(Node):
         self.MAX_VALUE = 32768
 
         self.get_logger().info('opening serial')
-        self.ser = serial.Serial(port='/dev/ttyACM0', baudrate=115200, timeout=1)
+        self.ser = serial.Serial(port='/dev/ttyACM2', baudrate=115200, timeout=1)
         self.get_logger().info('serial opened')
 
-        self.ser2 = serial.Serial(port='/dev/ttyACM0', baudrate=115200, timeout=1)
-
     def listener_callback(self, msg):
-        self.get_logger().info('starting message')
         
         left = (msg.data[0] / self.MAX_VALUE) * 30
         right = (msg.data[1] / self.MAX_VALUE) * 30
 
-        if abs(left) < 1:
+        if abs(left) < 1.5:
             left = 0
         
-        if abs(right) < 1:
+        if abs(right) < 1.5:
             right = 0
 
 
-        string = f'{-left},{-left},{-left},{right},{right},{right}\n'
+        string = f'{-left * 1.0},{-left},{-left},{right * 1.0},{right},{right}\n'
         self.get_logger().info(string[:len(string) - 1])
 
         self.ser.write(string.encode())
