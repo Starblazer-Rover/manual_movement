@@ -1,71 +1,77 @@
-import time
-import paho.mqtt.client as mqtt
+import rclpy
+from rclpy.node import Node
+
+from std_msgs.msg import Float32MultiArray
+
 import pygame
-import json
 
-# Initialize Pygame and the Joystick module
-pygame.init()
-pygame.joystick.init()
 
-# Check if there are any joysticks connected
-joystick_count = pygame.joystick.get_count()
-if joystick_count == 0:
-    print("No joysticks detected")
-    pygame.quit()
-    exit()
-else:
-    print(f"Detected {joystick_count} joystick(s)")
+class JoystickPublisher(Node):
 
-# Initialize the first connected joystick
-joystick = pygame.joystick.Joystick(0)
-joystick.init()
+    def __init__(self):
+        super().__init__('joystick_publisher')
 
-# Optional: Print information about joystick axes, buttons, and hats
-num_axes = joystick.get_numaxes()
-print(f"Number of axes: {num_axes}")
+        pygame.init()
+        pygame.joystick.init()
 
-num_buttons = joystick.get_numbuttons()
-print(f"Number of buttons: {num_buttons}")
+        self.joystick = pygame.joystick.Joystick(1)
+        self.joystick.init()
 
-num_hats = joystick.get_numhats()
-print(f"Number of hats: {num_hats}")
+        self.publisher = self.create_publisher(Float32MultiArray, '/movement/joystick', 10)
+        timer_period = 1/30
+        self.timer = self.create_timer(timer_period, self.timer_callback)
 
-client = mqtt.Client("rpi_joystick_client")
-client.connect('192.168.68.79', 1883)
-client.loop_start()
+    def timer_callback(self):
+        if pygame.joystick.get_count() <= 0:
+            print('No joysticks detected')
+            data = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+            self.publisher.publish(Float32MultiArray(data=data))
 
-try:
-    while True:
-        pygame.event.pump()  # Process the event queue
+            return
 
-        # Loop through each axis and publish its value
-        for i in range(joystick.get_numaxes()):
-            axis_value = joystick.get_axis(i)
-            axis_topic = f"rpi/broadcast/axis{i}"
-            value_str = str(axis_value)
-            print(f"Publishing to {axis_topic}: {value_str}")
-            client.publish(axis_topic, value_str)
+        pygame.event.pump()
 
-        # Loop through each button and publish its state
-        for i in range(joystick.get_numbuttons()):
-            button_state = joystick.get_button(i)
-            button_topic = f"rpi/broadcast/button{i}"
-            state_str = str(button_state)
-            # print(f"Publishing to {button_topic}: {state_str}")
-            client.publish(button_topic, state_str)
+        msg = Float32MultiArray()
 
-        # Loop through each hat and publish its state
-        for i in range(joystick.get_numhats()):
-            hat_state = joystick.get_hat(i)
-            hat_topic = f"rpi/broadcast/hat{i}"
-            state_str = str(hat_state)  # hat_state is a tuple (x, y), so we convert it to string
-            # print(f"Publishing to {hat_topic}: {state_str}")
-            client.publish(hat_topic, state_str)
+        #Axis 0, Axis 1, Axis 2, Axis 3, Button 0, Button 1, Hat 1
+        data = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
-        time.sleep(0.1)  # Delay to limit the message rate
+        for i in range(4):
+            axis_value = self.joystick.get_axis(i)
+            data[i] = axis_value
 
-except KeyboardInterrupt:
-    print("Exiting...")
-    client.loop_stop()
-    pygame.joystick.quit()
-    pygame.quit()
+        for i in range(2):
+            button_state = self.joystick.get_button(i)
+            data[i+4] = float(button_state)
+
+        hat_state = self.joystick.get_hat(0)
+        data[6] = float(hat_state[0])
+        data[7] = float(hat_state[1])
+
+        print(data)
+
+        print('-----------------')
+
+        msg.data = data
+
+        self.publisher.publish(msg)
+        
+
+def main(args=None):
+    rclpy.init(args=args)
+
+    joystick_publisher = JoystickPublisher()
+
+    try:
+        rclpy.spin(joystick_publisher)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        pygame.joystick.quit()
+        pygame.quit()
+
+        joystick_publisher.destroy_node()
+
+
+if __name__ == '__main__':
+    main()
