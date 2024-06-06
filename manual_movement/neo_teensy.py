@@ -29,7 +29,7 @@ class NeoSubscriber(Node):
             right = 0
 
 
-        string = f'{-left * 1.0},{-left},{-left},{right * 1.0},{right},{right}\n'
+        string = f'{-left},{-left},{-left},{right},{right},{right}\n'
         self.get_logger().info(string[:len(string) - 1])
 
         self.ser.write(string.encode())

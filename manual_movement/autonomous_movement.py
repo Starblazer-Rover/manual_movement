@@ -8,6 +8,7 @@ from std_msgs.msg import Float32MultiArray
 
 import math
 import serial
+import time
 
 
 class AutonomousMovement(Node):
@@ -15,15 +16,16 @@ class AutonomousMovement(Node):
     def __init__(self):
         super().__init__('autonomous_node')
 
-        self.costmap_subscriber = self.create_subscription(OccupancyGrid, '/map/grid', self.costmap_callback, 1)
+        self.costmap_subscriber = self.create_subscription(OccupancyGrid, '/map/grid_raw', self.costmap_callback, 1)
         self.pose_subscriber = self.create_subscription(PoseStamped, '/odom/target_point', self.pose_callback, 1)
         self.odom_subscriber = self.create_subscription(Odometry, '/odom', self.odometry_callback, 10)
-        self.vector_publisher = self.create_publisher(Float32MultiArray, '/movement/vector', 10)
 
-        #self.ser = serial.Serial('/dev/ttyACM2', 115200)
+        self.led = serial.Serial('/dev/ttyACM1', 115200)
+        self.move = serial.Serial('/dev/ttyACM2', 115200)
 
         self.costmap = None
         self.pose = None
+        self.waiting_costmap = False
 
         self.attempts = 0
 
@@ -31,6 +33,10 @@ class AutonomousMovement(Node):
         self.start_y = None
 
         self.collision = [91, 92, 93, 94, 106, 107, 108, 109, 121, 122, 123, 124]
+
+        self.center = [106, 107, 108, 109]
+        self.left = [121, 122, 123, 124]
+        self.right = [91, 92, 93, 94]
 
         self.states = {"Waiting": 0,
                        "Arrived?": 1,
@@ -41,7 +47,9 @@ class AutonomousMovement(Node):
                        "Finished": 6,
                        "Testing": 7
                        }
-        self.state = 7
+        self.state = 0
+
+        self.finished = False
         
 
     def calculate_angle(self, odom, pose):
@@ -58,6 +66,7 @@ class AutonomousMovement(Node):
 
         theta_degrees = math.degrees(theta_radians)
 
+        theta_degrees = theta_degrees % 360
         return theta_degrees
     
     def calculate_distance(self, odom, target):
@@ -88,49 +97,53 @@ class AutonomousMovement(Node):
 
     def costmap_callback(self, msg):
         self.costmap = msg
-        self.costmap_waiting = False
+        print('new costmap')
+
+        self.waiting_costmap = False
 
     def pose_callback(self, msg):
         self.pose = msg
 
     def set_led_red(self):
-        self.ser.write('1\n'.encode())
+        self.led.write('1\n'.encode())
 
     def set_led_green(self):
-        self.ser.write('2\n'.encode())
+        self.led.write('2\n'.encode())
     
     def set_led_off(self):
-        self.ser.write('0\n'.encode())
+        self.led.write('0\n'.encode())
 
     def turn_right(self, duration):
         print("Turning Right")
 
-        msg = Float32MultiArray()
-        data = [10.0, -10.0]
-        msg.data = data
-        self.vector_publisher.publish(msg)
+        left = 10.0
+        right = -10.0
+
+        string = f'{-left},{-left},{-left},{right},{right},{right}\n'
+
+        self.move.write(string.encode())
 
         self.wait(duration)
 
-        msg.data = [0.0, 0.0]
-        self.vector_publisher.publish(msg)
+        self.move.write('0,0,0,0,0,0\n'.encode())
 
         print("Stopping")
 
         return
 
     def turn_left(self, duration):
-        print("Turning left")
+        print("Turning Left")
 
-        msg = Float32MultiArray()
-        data = [-10.0, 10.0]
-        msg.data = data
-        self.vector_publisher.publish(msg)
+        left = -10.0
+        right = 10.0
+
+        string = f'{-left},{-left},{-left},{right},{right},{right}\n'
+
+        self.move.write(string.encode())
 
         self.wait(duration)
 
-        msg.data = [0.0, 0.0]
-        self.vector_publisher.publish(msg)
+        self.move.write('0,0,0,0,0,0\n'.encode())
 
         print("Stopping")
 
@@ -138,18 +151,19 @@ class AutonomousMovement(Node):
     
     def forward(self, duration):
         print("Moving Forward")
-        
-        msg = Float32MultiArray()
-        data = [10.0, 10.0]
-        msg.data = data
-        self.vector_publisher.publish(msg)
+
+        left = 15.0
+        right = 15.0
+
+        string = f'{-left},{-left},{-left},{right},{right},{right}\n'
+
+        self.move.write(string.encode())
 
         self.wait(duration)
 
-        msg.data = [0.0, 0.0]
-        self.vector_publisher.publish(msg)
+        self.move.write('0,0,0,0,0,0\n'.encode())
 
-        print('Stopping')
+        print("Stopping")
 
         return
     
@@ -168,15 +182,33 @@ class AutonomousMovement(Node):
 
     def orient_angle(self, current_angle, target_angle):
         difference = target_angle - current_angle
-
-        if difference < 0:
-            self.turn_right(1)
+        
+        if difference <= 0:
+            sign = -1
         else:
-            self.turn_left(1)
+            sign = 1
+
+        difference = abs(difference)
+
+        print(difference)
+        print(sign)
+
+        print(f'Target: {target_angle}, Current: {current_angle}')
+
+        if sign < 0:
+            if difference <= 180:
+                self.turn_right(0.5)
+            else:
+                self.turn_left(0.5)
+        else:
+            if difference <= 180:
+                self.turn_left(0.5)
+            else:
+                self.turn_right(0.5)
 
     def is_occupied(self):
         for i in self.collision:
-            if self.costmap[i] > 0:
+            if self.costmap.data[i] > 0:
                 return True
 
         return False
@@ -188,6 +220,7 @@ class AutonomousMovement(Node):
                 if self.costmap != None and self.pose != None:
                     print('Finished Waiting')
                     self.state = self.states["Arrived?"]
+                    #self.state = self.states["Testing"]
                     self.set_led_red()
 
                 return
@@ -210,7 +243,7 @@ class AutonomousMovement(Node):
                 current_angle = self.convert_angle(odom)
                 target_angle = self.calculate_angle(odom, self.pose)
 
-                if abs(target_angle - current_angle) < 5:
+                if abs(target_angle - current_angle) < 15:
                     print('Aligned')
                     self.state = self.states["Obstacle?"]
                 else:
@@ -225,32 +258,49 @@ class AutonomousMovement(Node):
                     self.state = self.states["Repositioned?"]
                 else:
                     print('Obstacle not Seen')
-                    self.forward(3)
+                    self.forward(1)
                     self.state = self.states["Arrived?"]
 
                 return
             case 4:
                 print('State: Repositioned?')
 
-                if self.attempts < 3:
-                    print('Repositioning Right')
-                    self.turn_right(0.5)
+                center = 0
+                right = 0
+                left = 0
 
-                    if not self.is_occupied():
-                        self.forward(3)
-                        self.orient_angle(current_angle, target_angle)
-                        self.attempts += 1
-                elif self.attempts < 6:
-                    print('Repositioning Left')
-                    self.turn_left(3)
+                current_angle = self.convert_angle(odom)
+                target_angle = self.calculate_angle(odom, self.pose)
 
-                    if not self.is_occupied():
-                        self.forward(3)
-                        self.orient_angle(current_angle, target_angle)
-                        self.attempts += 1
-                else:
-                    print('Failed to Reposition')
-                    self.state = self.states["Failed"]
+                print('Repositioning Right')
+
+                if not self.is_occupied():
+                    self.forward(3)
+                    self.orient_angle(current_angle, target_angle)
+                    self.wait(1.5)
+                elif not self.waiting_costmap:
+                    for i in self.center:
+                        if self.costmap.data[i] > 0:
+                            center = 1
+
+                    for i in self.left:
+                        if self.costmap.data[i] > 0:
+                            left = 1
+
+                    for i in self.right:
+                        if self.costmap.data[i] > 0:
+                            right = 1
+
+                    if center == 1 or left == 1:
+                        self.turn_left(1)
+                        print('waiting for costmap')
+                        self.waiting_costmap = True
+                        self.wait(1.5)
+                    else:
+                        self.turn_right(1)
+                        print('waiting for costmap')
+                        self.waiting_costmap = True
+                        self.wait(1.5)
 
                 if not self.is_occupied():
                     print('Repositioning Successful')
@@ -263,15 +313,22 @@ class AutonomousMovement(Node):
 
                 return
             case 6:
-                print('Finished')
-                self.set_led_green()
+                if not self.finished:
+                    print('Finished')
+                    self.set_led_green()
+                    self.finished = True
 
                 return
             case 7:
-                print('Testing')
-                
-                self.turn_right(3)
-                self.state = self.states['Failed']
+                print('State: Aligned?')
+                current_angle = self.convert_angle(odom)
+                target_angle = self.calculate_angle(odom, self.pose)
+
+                if abs(target_angle - current_angle) < 5:
+                    print('Aligned')
+                else:
+                    print('Not Aligned')
+                    self.orient_angle(current_angle, target_angle)
 
                 return
 
@@ -284,9 +341,8 @@ def main(args=None):
     try:
         rclpy.spin(autonomous_publisher)
     except KeyboardInterrupt:
-        msg = Float32MultiArray()
-        msg.data = [0.0, 0.0]
-        autonomous_publisher.vector_publisher.publish(msg)
+        autonomous_publisher.move.write('0,0,0,0,0,0'.encode())
+        autonomous_publisher.led.write('0\n'.encode())
     finally:
         autonomous_publisher.destroy_node()
 

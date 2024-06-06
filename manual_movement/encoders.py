@@ -35,6 +35,11 @@ class EncoderPublisher(Node):
 
         data = data.split('\r\n')
 
+        try:
+            assert len(data) > 1
+        except AssertionError:
+            return []
+
         data = data[-2]
 
         data = data.split(',')
@@ -44,12 +49,21 @@ class EncoderPublisher(Node):
 
             data[i] /= 48
 
+        if len(self.offset) < 1:
+            for i in range(len(data)):
+                self.offset.append(float(data[i]))
+
         return data
 
     def timer_callback(self):
         msg = Float64MultiArray()
 
         data = self.parse()
+
+        try:
+            assert len(data) > 1
+        except AssertionError:
+            return
 
         for i in range(len(data)):
             data[i] -= self.offset[i]

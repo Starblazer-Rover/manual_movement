@@ -1,19 +1,28 @@
 import rclpy
 from rclpy.node import Node
 import serial
+import sys
 
 from std_msgs.msg import Float32MultiArray
 
 
 class ArmSubscriber(Node):
 
-    def __init__(self):
+    def __init__(self, mode, status, roll, pitch):
         super().__init__('arm_subscriber')
         self.subscription = self.create_subscription(Float32MultiArray, '/movement/joystick', self.listener_callback, 1)
 
+        self.mode = mode
+        self.status = status
+        self.roll = roll
+        self.pitch = pitch
+
+        self.ser = serial.Serial(port='/dev/ttyACM2', baudrate=115200, timeout=1)
         self.ser = serial.Serial(port='/dev/ttyACM2', baudrate=115200, timeout=1)
 
     def listener_callback(self, msg):
+
+        print('here')
         
         for i in range(4):
             string = f'Axis {i}: {msg.data[i]}\n'
@@ -29,16 +38,31 @@ class ArmSubscriber(Node):
         self.ser.write(string.encode())
 
 
-        self.ser.write(f'AutoLevelingStatus: 0\n'.encode())
-        self.ser.write(f'RollAngle: 0.0\n'.encode())
-        self.ser.write(f'PitchAngle: 0.0\n'.encode())
-        self.ser.write(f'ControlMode: 0\n'.encode())
+        self.ser.write(f'AutoLevelingStatus: {self.status}\n'.encode())
+        self.ser.write(f'RollAngle: {self.roll}\n'.encode())
+        self.ser.write(f'PitchAngle: {self.pitch}\n'.encode())
+        self.ser.write(f'ControlMode: {self.mode}\n'.encode())
 
 
 def main(args=None):
     rclpy.init(args=args)
 
-    arm_subscriber = ArmSubscriber()
+    try:
+        mode = sys.argv[1]
+        status = sys.argv[2]
+        roll = sys.argv[3]
+        pitch = sys.argv[4]
+
+        print(f'Autoleveling - Roll: {roll}, Pitch: {pitch}')
+    except IndexError:
+        print('Manual Movement')
+
+        mode = 0
+        status = 0
+        roll = 0.0
+        pitch = 0.0
+
+    arm_subscriber = ArmSubscriber(mode, status, roll, pitch)
 
     try:
         rclpy.spin(arm_subscriber)
