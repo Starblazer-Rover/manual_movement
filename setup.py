@@ -24,11 +24,11 @@ setup(
     entry_points={
         'console_scripts': [
             'controller = manual_movement.controller:main',
+            'joystick = manual_movement.joystick:main',
             'rover_movement = manual_movement.neo_teensy:main',
             'autonomous = manual_movement.autonomous_movement:main',
             'encoder = manual_movement.encoders:main',
             'arm = manual_movement.arm_subscriber:main',
-            'test = manual_movement.test:main'
         ],
     },
 )

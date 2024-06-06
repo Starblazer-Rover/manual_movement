@@ -18,11 +18,8 @@ class ArmSubscriber(Node):
         self.pitch = pitch
 
         self.ser = serial.Serial(port='/dev/ttyACM2', baudrate=115200, timeout=1)
-        self.ser = serial.Serial(port='/dev/ttyACM2', baudrate=115200, timeout=1)
 
     def listener_callback(self, msg):
-
-        print('here')
         
         for i in range(4):
             string = f'Axis {i}: {msg.data[i]}\n'
