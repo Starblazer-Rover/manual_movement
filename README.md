@@ -131,18 +131,3 @@ The asyncronous subscriber calls compounds with the inherently low refresh rate 
 
 Upgrading to an Orin AGX and doing this swap should fix the problem.
 
-If you want to see the FSM, check software chat or DM me.
-
-### Miscellaneous Scripts:
-
-#### neo_movement.py:
-This is a control method if the motors are connected directly with the Jetson using CANBus. Make sure to run neo_start.sh before trying the script.
-
-The reason we swapped to the teensy is because the Jetson's kernel module for CANBus was corrupted which caused it to stop working.
-
-It should be fine if you want to swap back to this movement mode, but it has proven significantly less reliable than the teensy.
-
-#### aruco_movement.py:
-This is a movement method which grabs an image that finds ARUCO tags and gives the X position of the image. It can be referenced when implementing the functionality in the autonomous movement script.
-
-This is the movement script which was used during the SAR video.
